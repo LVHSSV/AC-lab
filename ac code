@@ -1,0 +1,63 @@
+# Correcting the code to connect h1 to h4 in sequence to form a complete loop (square)
+
+# Re-importing necessary libraries after execution environment reset
+import matplotlib.pyplot as plt
+import numpy as np
+import CoolProp.CoolProp as CP
+
+# Data for the four states, each with pressure (p), pressure uncertainty (pu), enthalpy (h), enthalpy uncertainty (hu)
+data = {
+    'p': [[138, 1023.623, 973.78583, 138], [98.3, 921.91009, 881.24493, 98.3],
+          [184.6, 1152.1377, 1087.9125, 184.6], [179, 1139.2714, 1077.8917, 179]],
+    'pu': [[1.168, 8.85357, 8.72202, 1.168], [1.218, 0.96231, 0.73373, 1.218],
+           [0.966, 6.46037, 6.37022, 0.966], [0.674, 12.75964, 11.81641, 0.674]],
+    'h': [[235.805, 315.076, 107.024, 107.024], [231.0984, 314.09031, 101.6444, 101.6444],
+          [240.0757, 315.53408, 112.9424, 112.9424], [239.623, 315.60669, 112.5293, 112.5293]],
+    'hu': [[0.184311792, 0.583699507, 0.97003969, 0.97003969], [0.242923712, 1.18038903, 0.854073892, 0.854073892],
+           [0.116348614, 1.222400179, 0.918421216, 0.918421216], [0.112216086, 1.240692653, 1.011398685, 1.011398685]]
+}
+
+
+offset = 145
+colors = ['darkorange', 'royalblue', 'forestgreen', 'firebrick']
+
+# define the pressure range in Pa
+p_max = CP.PropsSI('R134A','pcrit') / 1000 # Converting to kPa
+pressure_range_kPa = np.linspace(10, p_max, 100)
+
+
+# Define a function to plot the cycle for each state including the uncertainties
+def plot_state_cycle(p, pu, h, hu, state_label, color):
+    # Plot the cycle lines for the state
+    plt.plot(h + [h[0]], p + [p[0]], linestyle='-', marker='o', color=color, label=state_label)
+    # Plot the error bars for each point in the cycle
+    for i in range(len(p)):
+        plt.errorbar(h[i], p[i], xerr=hu[i], yerr=pu[i], fmt='o', color=color, capsize=5)
+
+# Set the colors for each state for consistency
+state_colors = ['green', 'orange', 'violet', 'purple']
+
+# Plotting the saturation curve and states with uncertainties
+plt.figure(figsize=(12, 8))
+
+h_liquid = [CP.PropsSI('H', 'P', p * 1e3, 'Q', 0, 'R134A') / 1e3 - offset for p in pressure_range_kPa]  # in kJ/kg
+h_vapor = [CP.PropsSI('H', 'P', p * 1e3, 'Q', 1, 'R134A') / 1e3 - offset for p in pressure_range_kPa]  # in kJ/kg
+plt.plot(h_liquid, pressure_range_kPa, 'b-', label='Vapor Dome')
+plt.plot(h_vapor, pressure_range_kPa, 'b-')
+plt.yscale("log")
+plt.ylim(bottom = 10)
+
+for i in range(4):
+    # Assuming the pressure range and enthalpy values for saturation are already calculated as 'pressure_range_kPa', 'h_liquid', and 'h_vapor'
+    plot_state_cycle(data['p'][i], data['pu'][i], data['h'][i], data['hu'][i], f'Experiment {i+1}', state_colors[i])
+
+# Customizing the plot
+plt.title('P-H Diagram for R-134a with Uncertainties')
+plt.xlabel('Enthalpy (kJ/kg)')
+plt.ylabel('Pressure (kPa)')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+
+# Show the plot
+plt.show()
